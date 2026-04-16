@@ -6,6 +6,6 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-2603.12655-b31b1b)](https://arxiv.org/abs/2603.12655)
 
-<img src="assets/main_figure.png" width="95%" alt="VGGT-World main figure">
+<img src="assets/ECCV_26_VGGTWorld.png" width="95%" alt="VGGT-World main figure">
 
 </div>
