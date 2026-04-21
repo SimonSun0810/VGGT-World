@@ -9,3 +9,8 @@
 <img src="assets/ECCV_26_VGGTWorld.png" width="95%" alt="VGGT-World main figure">
 
 </div>
+
+## 📌 TODO
+
+- [ ] Release training code  
+- [ ] Release inference code 
