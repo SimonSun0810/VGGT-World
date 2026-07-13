@@ -1,0 +1,108 @@
+# --- Project-specific ---
+# Checkpoints and large artifacts
+*.pt
+*.pth
+*.ckpt
+ckpt/
+checkpoints/
+
+# Training / experiment outputs
+.hydra/
+output/
+logs/
+training_fm/logs/
+wandb/
+
+# Demo / eval artifacts (keep demo/frames/ tracked)
+demo/outputs/
+depth_vis/
+
+# Local datasets and downloads
+data/
+datasets/
+
+# --- Python ---
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Tests / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Environments
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+.pixi
+__pypackages__/
+
+# IDE / editor
+.spyderproject
+.spyproject
+.ropeproject
+.idea/
+.vscode/
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Logs / misc
+*.log
+.prof
+**/tmp/
+
+# Legacy VGGT demo artifact
+**/outputs/skyseg.onnx
+skyseg.onnx

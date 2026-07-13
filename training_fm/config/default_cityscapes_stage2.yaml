@@ -1,0 +1,191 @@
+defaults:
+  - default.yaml
+
+exp_name: exp_cityscapes_stage2
+
+#cityscapes
+img_size: 448
+num_workers: 8
+seed_value: 42
+accum_steps: 2
+patch_size: 14
+val_epoch_freq: 1
+max_img_per_gpu: 128
+
+limit_train_batches: 800
+limit_val_batches: 0
+
+data:
+  train:
+    common_config:
+      img_nums: [5, 5]
+    dataset:
+      _target_: data.composed_dataset.ComposedDataset
+      dataset_configs:
+        - _target_: data.datasets.cityscapes.CityscapesDataset
+          split: train
+          Cityscapes_DIR: /YOUR/PATH/TO/DATA
+          len_train: 100000
+          expand_ratio: 1
+  val:
+    common_config:
+      img_nums: [5,5]
+    dataset:
+      _target_: data.composed_dataset.ComposedDataset
+      dataset_configs:
+        - _target_: data.datasets.cityscapes.CityscapesDataset
+          split: test
+          Cityscapes_DIR: /YOUR/PATH/TO/DATA
+          len_train: 100000
+          expand_ratio: 1
+
+logging:
+  log_dir: logs
+  log_visuals: False
+  log_freq: 1
+  log_level_primary: DEBUG
+  log_level_secondary: WARNING
+  all_ranks: False
+  wandb:
+    enabled: true
+    project: vggt_fm
+    name: ${exp_name}
+  tensorboard_writer:
+    _target_: train_utils.tb_writer.TensorBoardLogger
+    path: ${logging.log_dir}/tensorboard
+  scalar_keys_to_log:
+    train:
+      keys_to_log:
+        - loss_objective
+      #   - loss_camera
+      #   - loss_T
+      #   - loss_R
+      #   - loss_FL
+      #   - loss_conf_depth
+      #   - loss_reg_depth
+      #   - loss_grad_depth
+    val:
+      keys_to_log:
+        - loss_objective
+      #   - loss_camera
+      #   - loss_T
+      #   - loss_R
+      #   - loss_FL
+      #   - loss_conf_depth
+      #   - loss_reg_depth
+      #   - loss_grad_depth
+
+
+checkpoint:
+  save_dir: logs/${exp_name}/ckpts
+  save_freq: 1
+  resume_checkpoint_path: /YOUR/PATH/TO/CKPT
+  strict: False
+
+
+loss:
+  _target_: loss.MultitaskLoss
+  camera: 
+    weight: 5.0
+    loss_type: "l1" # The paper uses smooth l1 loss, but we found l1 loss is more stable than smooth l1 and l2 loss.  
+  depth:
+    weight: 1.0
+    gradient_loss_fn: "grad" 
+    valid_range: 0.98
+  point: null
+  # If you want to enable point, use the following config
+  # point: 
+  #   weight: 1.0
+  #   gradient_loss_fn: "normal" 
+  #   valid_range: 0.98
+  track: null   
+
+
+optim:
+  param_group_modifiers: False
+
+  optimizer:
+    _target_: torch.optim.AdamW
+    lr: 2e-4
+    weight_decay: 0.05
+
+  frozen_module_names:
+      - "aggregator"  # example, freeze the aggregator
+      - "camera_head"
+      - "*point_head*"
+      - "depth_head"
+      - "*track_head*"
+      # - "*fm*"
+
+  amp:
+    enabled: True
+    amp_dtype: bfloat16
+  ema:
+    enabled: true
+    decay: 0.9999
+    update_every: 1
+    eval_with_ema: true
+  gradient_clip:
+    _target_: train_utils.gradient_clip.GradientClipper
+    configs:
+      - module_name: ["fm"]
+        max_norm: 1.0
+        norm_type: 2
+      # - module_name: ["aggregator"]
+      #   max_norm: 1.0   # feel free to reduce this if you see instabilities
+      #   norm_type: 2
+      # - module_name: ["depth"]
+      #   max_norm: 1.0   # feel free to reduce this if you see instabilities
+      #   norm_type: 2
+      # - module_name: ["camera"]
+      #   max_norm: 1.0   # feel free to reduce this if you see instabilities
+      #   norm_type: 2
+  options:
+    lr:
+    - scheduler:
+        _target_: fvcore.common.param_scheduler.CompositeParamScheduler
+        schedulers:
+        # 1) warmup: 0~5%
+        - _target_: fvcore.common.param_scheduler.LinearParamScheduler
+          start_value: 1e-6
+          end_value: 2e-4
+
+        # 2) plateau: 5%~90%
+        - _target_: fvcore.common.param_scheduler.ConstantParamScheduler
+          value: 2e-4
+
+        # 3) decay: 90%~100%
+        - _target_: fvcore.common.param_scheduler.CosineParamScheduler
+          start_value: 2e-4
+          end_value: 3e-5 
+        lengths: [0.05, 0.90, 0.05]
+        interval_scaling: ['rescaled', 'rescaled', 'rescaled']
+
+
+model:
+  _target_: vggt.models.vggt.VGGT
+  enable_camera: True
+  enable_depth: True
+  enable_point: True
+  enable_track: True
+  fm_train_mode: stage_2
+  fm_pred_steps: 50
+  fm_pred_weight: 0.7
+
+max_epochs: 30
+
+
+distributed:
+  # check https://docs.pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html for options
+  backend: nccl
+  comms_dtype: None
+  find_unused_parameters: False
+  timeout_mins: 30
+  gradient_as_bucket_view: True  # Less memory used
+  bucket_cap_mb: 25
+  broadcast_buffers: True
+
+cuda:
+    cudnn_deterministic: False
+    cudnn_benchmark: False
+    allow_tf32: True
