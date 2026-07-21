@@ -11,7 +11,7 @@ import torch
 from PIL import Image
 from vggt.models.vggt import VGGT
 from typing import Optional
-from hydra import compose, initialize
+from hydra import compose, initialize_config_dir
 from hydra.utils import instantiate
 
 
@@ -75,6 +75,8 @@ def main():
         default="/data2/uqxsun14/backup/exp000_cityscapes_finetune_1/ckpts/checkpoint_6.pt",
         help="Checkpoint path for VGGT.",
     )
+    parser.add_argument("--config", default="default_cityscapes",
+                        help="hydra config name under training_fm/config (repo has no bare `default.yaml`)")
     args = parser.parse_args()
 
     sequence_list = build_sequence_list(args.cityscapes_dir, args.split)
@@ -83,7 +85,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def load_model_from_config(config_name: str, ckpt_path: Optional[str], device: str):
-        with initialize(version_base=None, config_path=str(CONFIG_DIR)):
+        with initialize_config_dir(version_base=None, config_dir=str(CONFIG_DIR)):
             cfg = compose(config_name=config_name)
 
         model = instantiate(cfg.model, _recursive_=False)
@@ -107,7 +109,7 @@ def main():
             model.fm.eval()
         return model, cfg
 
-    model, cfg = load_model_from_config("default", args.ckpt, device)
+    model, cfg = load_model_from_config(args.config, args.ckpt, device)
     abs_rels = []
     delta1s = []
     with torch.no_grad():
